@@ -305,7 +305,7 @@ function viewModel() {
       var latitude = value.fourLat,
           longitude = value.fourLon,
           geoLoc = new google.maps.LatLng(latitude, longitude),
-          thisRestaurant = value.fourName;
+          thisBar = value.fourName;
 
       var contentString = '<div id="infowindow">' +
       '<img src="' + value.fourImg + '">' +
@@ -316,9 +316,19 @@ function viewModel() {
 
       var marker = new google.maps.Marker({
         position: geoLoc,
-        title: thisRestaurant,
-        map: map
+        title: thisBar,
+        map: map,
+        animation: google.maps.Animation.DROP
       });
+
+      // Toggle Bounce.
+      function toggleBounce() {
+        if (marker.getAnimation() !== null) {
+          marker.setAnimation(null);
+        } else {
+          marker.setAnimation(google.maps.Animation.BOUNCE);
+        }
+      }
 
       self.mapMarkers.push({marker: marker, content: contentString});
 
@@ -331,9 +341,12 @@ function viewModel() {
          infowindow.setContent(contentString);
          map.setZoom(14);
          map.setCenter(marker.position);
+         toggleBounce();
          infowindow.open(map, marker);
+         setTimeout(toggleBounce, 1500);
          map.panBy(0, -150);
        });
+
     });
   }
 
