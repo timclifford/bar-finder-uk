@@ -16,10 +16,11 @@
         <input type="text" id="autocomplete" placeholder="Search location" data-bind="value: searchLocation, selectOnFocus: true">
         <input type="submit" value="Search!" id="submit">
         <p data-bind="text: searchStatus"></p>
+        <p data-bind="text: connectionStatus"></p>
       </form>
       <form data-bind="submit: filterResults" class="resultsform">
         <input type="text" placeholder="Filter by name" data-bind="value:filterKeyword, selectOnFocus: true">
-        <input type="submit" value="Find!" id="submit">
+        <input type="submit" value="Find!" id="submitResults">
         <p data-bind="visible: filterKeyword().length > 0, click: clearFilter" class="clearbutton">Clear filter</p>
       </form>
     </div>
@@ -44,7 +45,6 @@
         </ul>
       </div>
     </div>
-  <div>
 
 <!-- Mobile list of results, mobile navigation buttons, hidden until media query is activated -->
   <div title="toggle search bar" class="searchbtn" data-bind="click: searchToggle">
@@ -65,7 +65,7 @@
     </div>
     <div class="mobile-results">
       <p class="waiting" data-bind="html: loadImg"></p>
-      <ul id="results-list" data-bind="visible: toggleSymbol() === 'hide', foreach: filteredList">
+      <ul id="results-list-mobile" data-bind="visible: toggleSymbol() === 'hide', foreach: filteredList">
         <li data-bind="click: $parent.goToMarker">
           <h4 data-bind="text: fourName"></h4>
           <p class="address" data-bind="html: fourAddress"></p>
@@ -76,7 +76,7 @@
   </div>
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-  <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?&libraries=places"></script>
+  <script async src="https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true&libraries=places&callback=mapSuccess" onerror="mapFail()"></script>
   <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/knockout/knockout-3.0.0.js"></script>
   <script type="text/javascript" src="js/jquery.autocomplete.js"></script>
   <script type="text/javascript" src="js/app.js"></script>

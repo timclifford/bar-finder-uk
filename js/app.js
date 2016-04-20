@@ -1,3 +1,4 @@
+'use strict';
 function viewModel() {
   var self = this;
   var map, city, infowindow;
@@ -17,6 +18,7 @@ function viewModel() {
   this.fourStatus = ko.observable('Searching bars...');
   // Search status observable.
   this.searchStatus = ko.observable();
+  this.connectionStatus = ko.observable();
 
   // Default location and loading gif.
   this.searchLocation = ko.observable('Bristol & Bath');
@@ -49,6 +51,7 @@ function viewModel() {
         map.panBy(0, -150);
         self.mobileShow(false);
         self.searchStatus('');
+        self.connectionStatus('');
       }
     }
   };
@@ -56,6 +59,7 @@ function viewModel() {
   // Handle the user input for results in a location.
   this.processLocationSearch = function() {
     self.searchStatus('');
+    self.connectionStatus('');
     self.searchStatus('Searching...');
     var newAddress = $('#autocomplete').val();
     
@@ -207,6 +211,10 @@ function viewModel() {
     var uk = '-united-kingdom';
     var queryType = '&query=' + type;
 
+    var foursquareRequestTimeout = setTimeout(function() {
+        return self.searchStatus('Failed to retrieve Foursquare data.');
+    }, 8000);
+
     $.ajax({
       url: foursquareUrl + queryType + ll + divId + uk,
       dataType: 'jsonp',
@@ -217,6 +225,7 @@ function viewModel() {
           var gIcon = data.response.venues[i].categories[0];
             // This filters out results that don't have a location.
             if (data.response.venues[i].name === undefined) continue;
+            var venueLat, venueLon, gLink, city, postalCode, address;
             var venueName = data.response.venues[i].name;
                 venueLat = venueLocation.lat,
                 venueLon = venueLocation.lng,
@@ -224,7 +233,7 @@ function viewModel() {
                 city = venueLocation.city;
 
             var gImgPre, gImgSuf, gImg;
-             if((gIcon == null) || gIcon === undefined ) { 
+             if((gIcon === null) || gIcon === undefined ) { 
                 gIcon = "";
              } else {
                 gIcon = data.response.venues[i].categories[0].icon;
@@ -233,20 +242,20 @@ function viewModel() {
                 gImg = gImgPre + 'bg_88' + gImgSuf;
              }
 
-            if((venueLocation.postalCode == null) || venueLocation.postalCode === undefined ) { 
+            if((venueLocation.postalCode === null) || venueLocation.postalCode === undefined ) { 
               postalCode = '';
             } else {
               postalCode = venueLocation.postalCode;
             }
 
-            if((venueLocation.address == null) || venueLocation.address === undefined ) { 
+            if((venueLocation.address === null) || venueLocation.address === undefined ) { 
               venueLocation.address = 'UK';
             } else {
               address = venueLocation.address;
             }
 
           var checkinsCount;
-          if((data.response.venues[i].stats.checkinsCount == null) || data.response.venues[i].stats.checkinsCount === undefined ) { checkinsCount = '';
+          if((data.response.venues[i].stats.checkinsCount === null) || data.response.venues[i].stats.checkinsCount === undefined ) { checkinsCount = '';
           } else {
             var num = data.response.venues[i].stats.checkinsCount;
             var decimal = num.toFixed(1);
@@ -268,13 +277,26 @@ function viewModel() {
         self.filteredList(self.foursquareItems());
         mapMarkers(self.foursquareItems());
         self.searchStatus('');
+        self.connectionStatus('');
         self.loadImg('');
-      },
-      error: function() {
+
+        // cleartimeout
+        clearTimeout(foursquareRequestTimeout);
+
+      }
+      /*error: function() {
         self.fourStatus('Oops, something went wrong, please refresh and try again.');
         self.loadImg('');
-      }
+      }*/
+
+    }).done(function() {
+        self.searchStatus('Found results.');
+    }).fail(function() {
+      self.fourStatus('Oops, something went wrong, please refresh and try again.');
+      self.loadImg('');
+      alert("Request failed: Failed to retrieve Foursquare data.");
     });
+
   }
 
 // Create and place markers and info windows on the map.
@@ -305,6 +327,7 @@ function viewModel() {
       // Generate info windows for each result.
       google.maps.event.addListener(marker, 'click', function() {
         self.searchStatus('');
+        self.connectionStatus('');
          infowindow.setContent(contentString);
          map.setZoom(14);
          map.setCenter(marker.position);
@@ -326,6 +349,11 @@ function viewModel() {
 // As Foursquare doesn't have a nice list of locations for their venues.
 
   function getGrouponLocations() {
+
+    var grouponRequestTimeout = setTimeout(function() {
+        return self.searchStatus('Failed to retrieve Groupon data.');
+    }, 8000);
+
     $.ajax({
       url: 'https://partner-int-api.groupon.com/division.json?country_code=UK',
       dataType: 'jsonp',
@@ -344,12 +372,24 @@ function viewModel() {
           showNoSuggestionNotice: true,
           noSuggestionNotice: 'Sorry, no matching results'
         });
-      },
-      error: function() {
+
+        // cleartimeout
+        clearTimeout(grouponRequestTimeout);
+
+      }
+      /*error: function() {
         self.fourStatus('Error, please reload the page and try again.');
         self.loadImg('');
-      }
+      }*/
+    }).done(function() {
+        self.connectionStatus('Location found.');
+    })
+    .fail(function() {
+        self.searchStatus('Something went wrong, please refresh and try again.');
+        self.loadImg('');
+        alert( "Request failed: Failed to retrieve Groupon location data.");
     });
+
   }
 
   // Manages the toggling of the list view, location centering, and search bar on a mobile device.
@@ -394,4 +434,13 @@ ko.bindingHandlers.selectOnFocus = {
   }
 };
 
-ko.applyBindings(new viewModel());
+// Check Google Maps has loaded.
+
+var mapFail = function () {
+  alert('Google maps did not load correctly.');
+}
+
+var mapSuccess = function () {
+  console.log('Google maps loaded successfully');
+  ko.applyBindings(new viewModel());
+};
